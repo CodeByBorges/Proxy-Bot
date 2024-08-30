@@ -1,39 +1,40 @@
-import subprocess
+import winreg
+import time
 
-# Lista de softwares a serem instalados
-softwares = [
-    "Microsoft Office 2010",
-    "Driver Booster",
-    "UltraVNC",
-    "WinRAR",
-    "Revo Uninstaller",
-    "Google Chrome"
-]
+def disable_proxy():
+    try:
+        # Abrindo a chave do registro para configurações de proxy
+        registry_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Internet Settings', 0, winreg.KEY_WRITE)
 
-# Comandos de instalação específicos para cada software (exemplo para Windows usando arquivos executáveis)
-install_commands = {
-    "Microsoft Office 2010": ["D:\Aplicativos\Microsoft Office 2010 - ST (Grupo JLJ)\setup.exe", "/quiet", "/norestart"],
-    "Driver Booster": ["path_to_installer.exe", "/S"],
-    "UltraVNC": ["path_to_installer.exe", "/silent"],
-    "WinRAR": ["path_to_installer.exe", "/S"],
-    "Revo Uninstaller": ["path_to_installer.exe", "/VERYSILENT", "/NORESTART"],
-    "Google Chrome": ["path_to_installer.exe", "/silent", "/install"]
-}
+        # Configurando o valor do proxy para 0 (desativado)
+        winreg.SetValueEx(registry_key, 'ProxyEnable', 0, winreg.REG_DWORD, 0)
 
-# Loop para instalar cada software
-for software in softwares:
-    print(f"Instalando {software}...")
-    
-    # Verifica se há um comando de instalação definido para o software
-    if software in install_commands:
-        install_command = install_commands[software]
-        
-        try:
-            subprocess.check_call(install_command)
-            print(f"{software} instalado com sucesso.")
-        except subprocess.CalledProcessError as e:
-            print(f"Erro ao instalar {software}: {e}")
-    else:
-        print(f"Comando de instalação não especificado para {software}. Pule este software.")
+        # Fechando a chave do registro
+        winreg.CloseKey(registry_key)
+        print("Proxy desativado com sucesso.")
+    except Exception as e:
+        print(f"Erro ao desativar o proxy: {e}")
 
-print("Instalação em massa concluída.")
+def check_and_disable_proxy():
+    try:
+        # Abrindo a chave do registro para leitura das configurações de proxy
+        registry_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Internet Settings', 0, winreg.KEY_READ)
+
+        # Obtendo o valor do proxy
+        proxy_enable, _ = winreg.QueryValueEx(registry_key, 'ProxyEnable')
+
+        # Fechando a chave do registro
+        winreg.CloseKey(registry_key)
+
+        # Verificando se o proxy está ativado
+        if proxy_enable == 1:
+            print("Proxy ativado. Desativando...")
+            disable_proxy()
+    except Exception as e:
+        print(f"Erro ao verificar o proxy: {e}")
+
+if __name__ == "__main__":
+    while True:
+        check_and_disable_proxy()
+        # Intervalo de verificação de 60 segundos
+        time.sleep(20)
